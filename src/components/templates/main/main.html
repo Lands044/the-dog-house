@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="[[lang]]">
+	<include src="@components/layout/head/head.html" locals='{
+		"title":"[[title]]", 
+		"preloader": {
+			"enable":"[[preloader.enable]]",
+			"once":"[[preloader.once]]"
+		},
+		"keywords":"[[keywords]]", 
+		"description":"[[description]]"
+	}'>
+	</include>
+	<script type="module" src="@components/templates/main/main.js"></script>
+	<link rel="stylesheet" href="@components/templates/main/main.scss">
+	<body>
+		<div class="wrapper">
+			<block name="header"></block>
+			<block name="main"></block>
+			<block name="footer"></block>
+		</div>
+		<block name="popup"></block>
+		<div class="rotate-overlay">
+			<div class="rotate-overlay__content">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+					<rect x="4" y="2" width="16" height="20" rx="2" />
+					<path d="M12 18h.01" />
+				</svg>
+				<p>Please rotate your device to portrait mode</p>
+			</div>
+		</div>
+		<script type="module" src="@js/app.js"></script>
+	</body>
+</html>
