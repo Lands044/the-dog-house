@@ -60,7 +60,7 @@ class SlotMachine {
 
 		// Звуки
 		this.sounds = {
-			spin: new Audio('@sound/'),
+			spin: new Audio('@sound/spin.mp3'),
 			win: new Audio('@sound/win2.mp3'),
 			select: new Audio('@sound/select.ogg')
 		};
