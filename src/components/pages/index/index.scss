@@ -1,8 +1,8 @@
 $red: #a01602;
 $gold: #fdc909;
 $bg-gold: #FFA500;
-$purple: #cb2af8;
-$bg-popup: #0251a0;
+$purple: #1e7c2f;
+$bg-popup: #176bbf;
 $button-popup: #fdc909;
 
 %border {
@@ -98,9 +98,8 @@ $button-popup: #fdc909;
 			height: 100%;
 		}
 
-		@media (max-width:toEm($mobileSmall)) and (pointer: coarse){
-			top: -12%;
-			width: 65%;
+		@media (max-width:toEm($tablet)) and (pointer: coarse) {
+			top: -26%;
 		}
 	}
 
@@ -165,7 +164,7 @@ $button-popup: #fdc909;
 	position: relative;
 	margin: 0 auto;
 
-	max-width: 1180px;
+	max-width: 840px;
 	width: 100%;
 
 	&::before {
@@ -179,16 +178,43 @@ $button-popup: #fdc909;
 		background: url('../../../assets/img/house.png') center bottom/contain no-repeat;
 		pointer-events: none;
 		z-index: 1;
+
+		@media (max-width:toEm($tablet)) and (pointer: coarse) {
+			background: #642726;
+			width: 106%;
+			height: 138%;
+			bottom: -5%;
+			border-radius: 22px;
+			border: 10px solid #f4984c;
+		}
+
+		@media (max-width:toEm($mobile)) and (pointer: coarse) {
+			border-width: 6px ;
+		}
 	}
 
-	@media (max-width:toEm($mobile)) and (pointer: coarse) {
-		&::before {
-			display: none;
+	&::after {
+		@media (max-width:toEm($tablet)) and (pointer: coarse) {
+			content: '';
+			position: absolute;
+			bottom: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 101%;
+			height: 102%;
+			background: #753027;
+			border-radius: 16px;
+			border: 2px solid #f2e4a2;
+			z-index: 1;
+		}
+
+		@media (max-width:toEm($mobileSmall)) and (pointer: coarse) {
+			border: none;
 		}
 	}
 
 	&__spinner {
-		width: 72%;
+		width: 100%;
 		display: grid;
 		grid-template-columns: repeat(5, 1fr);
 		gap: 20px;
@@ -256,6 +282,11 @@ $button-popup: #fdc909;
 
 		@media (max-width:toEm($mobile)) and (pointer: coarse){
 			height: 140px;
+			padding: 0 10px;
+		}
+
+		@media (max-width:toEm($mobileSmall)) and (pointer: coarse) {
+			padding: 0;
 		}
 
 		@media (max-width: toEm($mobileSmall)) and (max-height: toEm(800)) and (pointer: coarse) {
