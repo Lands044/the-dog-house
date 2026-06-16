@@ -28,9 +28,9 @@ class SlotMachine {
 
 		// Фінансові значення
 		this.balance = 1000.00;
-		this.bet = 1.20;
-		this.betStep = 0.60;
-		this.minBet = 0.60;
+		this.bet = 2.00;
+		this.betStep = 1.00;
+		this.minBet = 1.00;
 		this.maxBet = 48.00;
 
 		// Брейкпоінти: desktop (>767.98px), mobile (<=767.98px), mobileSmall (<=479.98 && <=800px height)
@@ -388,7 +388,7 @@ class SlotMachine {
 	// Анімація обертання всіх колонок
 	async spin(result) {
 		const columns = this.drumSpinner.querySelectorAll('.drum__column');
-		const duration = 3000;
+		const duration = 2800;
 		const colDelay = 250;
 
 		// Перша колонка стартує першою і зупиняється першою
@@ -436,7 +436,7 @@ class SlotMachine {
 		strip.classList.add('active');
 
 		// Запускаємо анімацію — швидкий старт, гальмування з overshoot (проліт і повернення)
-		strip.style.transition = `transform ${duration}ms cubic-bezier(0.25, 0.6, 0.35, 1.1)`;
+		strip.style.transition = `transform ${duration}ms cubic-bezier(0.25, 0.6, 0.35, 1.0)`;
 		strip.style.transform = `translateY(-${finalOffset}px)`;
 
 		// Видаляємо blur ефект перед зупинкою
