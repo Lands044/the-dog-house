@@ -492,6 +492,7 @@ class SlotMachine {
 		if (result.type === 'bigwin') {
 			this.playSound('win');
 			this.drumSpinner.classList.add('bigwin-animation');
+			this.drumSpinner.style.borderRadius = '16px';
 
 			// Більше флешів для bigwin
 			this.createWinEffects(24);
@@ -508,6 +509,7 @@ class SlotMachine {
 
 			setTimeout(() => {
 				this.drumSpinner.classList.remove('bigwin-animation');
+				this.drumSpinner.style.borderRadius = '';
 				this.removeBigWinText();
 				this.removeWinLine();
 				this.enableSpinButtons();
@@ -516,6 +518,7 @@ class SlotMachine {
 		} else if (result.type === 'smallwin') {
 			this.playSound('win');
 			this.drumSpinner.classList.add('smallwin-animation');
+			this.drumSpinner.style.borderRadius = '16px';
 
 			// Малюємо виграшну лінію
 			if (result.winLine) {
@@ -524,6 +527,7 @@ class SlotMachine {
 
 			setTimeout(() => {
 				this.drumSpinner.classList.remove('smallwin-animation');
+				this.drumSpinner.style.borderRadius = '';
 				this.removeWinLine();
 				this.enableSpinButtons();
 			}, 1500);
