@@ -264,7 +264,7 @@ $button-popup: #fdc909;
 		transition: filter 0.3s ease-in-out;
 
 		&.active {
-			filter: blur(1px);
+			filter: blur(3px);
 		}
 	}
 

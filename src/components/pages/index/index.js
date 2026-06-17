@@ -388,16 +388,20 @@ class SlotMachine {
 	// Анімація обертання всіх колонок
 	async spin(result) {
 		const columns = this.drumSpinner.querySelectorAll('.drum__column');
-		const duration = 2800;
-		const colDelay = 250;
+		const isMobile = this.config.cols === 3;
+		const baseSpinDuration = isMobile ? 2500 : 900; // мінімальний час кручення першої колонки
+		const stopDelay        = isMobile ? 250 : 350;  // додаткова затримка кожної наступної колонки
+		const stopDuration     = 500; // тривалість фази overshoot
+		const startDelay       = 80;  // затримка старту між колонками
 
-		// Перша колонка стартує першою і зупиняється першою
 		const spinPromises = Array.from(columns).map((column, colIndex) => {
 			return new Promise((resolve) => {
 				setTimeout(() => {
-					this.spinColumn(column, result.result[colIndex], duration);
-					setTimeout(resolve, duration);
-				}, colIndex * colDelay);
+					// Кожна колонка крутиться лінійно рівно до свого моменту зупинки
+					const spinDuration = baseSpinDuration + colIndex * stopDelay;
+					this.spinColumn(column, result.result[colIndex], spinDuration, stopDuration);
+					setTimeout(resolve, spinDuration + stopDuration);
+				}, colIndex * startDelay);
 			});
 		});
 
@@ -405,44 +409,45 @@ class SlotMachine {
 	}
 
 	// Анімація обертання однієї колонки
-	spinColumn(column, targetIcons, duration) {
+	// Фаза 1: лінійний прокрут від startOffset → midOffset протягом spinDuration
+	// Фаза 2: overshoot від midOffset → finalOffset (відскок назад на місце)
+	spinColumn(column, targetIcons, spinDuration, stopDuration) {
 		const strip = column.querySelector('.drum__strip');
 		const iconHeight = this.getIconHeight();
 
-		// Знаходимо позицію потрібної послідовності в стрічці (з початку, де predefined)
 		const targetPosition = this.findSequencePosition(strip, targetIcons);
-
 		if (targetPosition === -1) {
 			console.log('Послідовність не знайдена');
 			return;
 		}
 
-		// Фінальна позиція — показати потрібні іконки
 		const finalOffset = targetPosition * iconHeight;
 
-		// Стартова позиція — після фінальної в стрічці (більший offset)
-		// Стрічка рухатиметься від більшого до меншого translateY = вгору = іконки летять вниз
-		const extraScroll = iconHeight * 20;
-		const startOffset = finalOffset + extraScroll;
+		// startOffset > midOffset > finalOffset
+		// Фаза 1 проходить startOffset→midOffset лінійно за spinDuration
+		// Фаза 2 проходить midOffset→finalOffset з overshoot за stopDuration
+		const isMobile = this.config.cols === 3;
+		const stopDistance = iconHeight * 3;
+		const spinDistance = iconHeight * (isMobile ? 58 : 28);
+		const midOffset   = finalOffset + stopDistance;
+		const startOffset = midOffset + spinDistance;
 
-		// Скидаємо до стартової позиції
+		// Фаза 0: стрибок до startOffset без анімації
 		strip.style.transition = 'none';
 		strip.style.transform = `translateY(-${startOffset}px)`;
-
-		// Примусовий reflow
 		strip.offsetHeight;
 
-		// Додаємо blur ефект на початку обертання
+		// Фаза 1: лінійний прокрут з blur — кожна колонка крутиться свій час
 		strip.classList.add('active');
+		strip.style.transition = `transform ${spinDuration}ms linear`;
+		strip.style.transform = `translateY(-${midOffset}px)`;
 
-		// Запускаємо анімацію — швидкий старт, гальмування з overshoot (проліт і повернення)
-		strip.style.transition = `transform ${duration}ms cubic-bezier(0.25, 0.6, 0.35, 1.0)`;
-		strip.style.transform = `translateY(-${finalOffset}px)`;
-
-		// Видаляємо blur ефект перед зупинкою
+		// Фаза 2: одразу після закінчення фази 1 — overshoot до finalOffset
 		setTimeout(() => {
 			strip.classList.remove('active');
-		}, duration - 250);
+			strip.style.transition = `transform ${stopDuration}ms cubic-bezier(0.22, 1.3, 0.36, 1)`;
+			strip.style.transform = `translateY(-${finalOffset}px)`;
+		}, spinDuration);
 	}
 
 	// Знаходить позицію послідовності іконок у стрічці
