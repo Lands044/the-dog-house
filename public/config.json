@@ -12,7 +12,7 @@
 		"spins": {
 			"desktop": [
 				{
-					"type": "bigwin",
+					"type": "loss",
 					"winAmount": 0,
 					"winLine": null,
 					"result": [
