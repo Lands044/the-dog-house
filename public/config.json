@@ -2,36 +2,17 @@
 	"$comment": "Runtime config for this landing. This file is served as-is from the public folder and is fetched by the page on every load, so editing it changes the landing WITHOUT a rebuild. Reload the page (or let the dev watcher pick it up) and the landing re-renders.",
 	"version": 1,
 	"game": {
-		"$comment": "spins.desktop = 5 columns, spins.mobile = 3 columns; played in order, the CTA popup opens after the last one. type: loss | smallwin | bigwin. winLine: row (0-2) per column, null = skip. result: icon numbers (1-8, src/assets/img/icon/icon-N.png) per column, top to bottom. timing values are ms, except spinDistance (icons scrolled per spin).",
+		"$comment": "spins.desktop = 5 columns, spins.mobile = 3 columns; played in order, the CTA popup opens after the last one. type: loss | smallwin | bigwin. winLine: row (0-2) per column, null = skip. result: icon numbers (1-8, src/assets/img/icon/icon-N.png) per column, top to bottom.",
 		"currency": "$",
 		"balance": 2000,
 		"bet": 4,
 		"betStep": 2.6,
 		"minBet": 0.6,
 		"maxBet": 48,
-		"timing": {
-			"spinDuration": {
-				"desktop": 900,
-				"mobile": 2500
-			},
-			"stopDelay": {
-				"desktop": 350,
-				"mobile": 250
-			},
-			"stopDuration": 500,
-			"startDelay": 80,
-			"spinDistance": {
-				"desktop": 28,
-				"mobile": 58
-			},
-			"smallWinTime": 1500,
-			"bigWinTime": 3000,
-			"ctaDelay": 1500
-		},
 		"spins": {
 			"desktop": [
 				{
-					"type": "loss",
+					"type": "bigwin",
 					"winAmount": 0,
 					"winLine": null,
 					"result": [

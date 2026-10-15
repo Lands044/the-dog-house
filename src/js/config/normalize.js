@@ -73,21 +73,6 @@ function normalizeGameConfig(input) {
 	game.maxBet = Math.max(game.minBet, toMoney(game.maxBet, defaults.maxBet))
 	game.bet = Math.min(game.maxBet, Math.max(game.minBet, toMoney(game.bet, defaults.bet)))
 
-	const timing = game.timing
-	const td = defaults.timing
-	for (const key of ['spinDuration', 'stopDelay', 'spinDistance']) {
-		if (!timing[key] || typeof timing[key] !== 'object') timing[key] = {}
-		for (const device of ['desktop', 'mobile']) {
-			const max = key === 'spinDistance' ? 200 : 20000
-			timing[key][device] = clampInt(timing[key]?.[device], td[key][device], key === 'spinDistance' ? 3 : 0, max)
-		}
-	}
-	timing.stopDuration = clampInt(timing.stopDuration, td.stopDuration, 0, 5000)
-	timing.startDelay = clampInt(timing.startDelay, td.startDelay, 0, 2000)
-	timing.smallWinTime = clampInt(timing.smallWinTime, td.smallWinTime, 0, 20000)
-	timing.bigWinTime = clampInt(timing.bigWinTime, td.bigWinTime, 0, 20000)
-	timing.ctaDelay = clampInt(timing.ctaDelay, td.ctaDelay, 0, 20000)
-
 	if (!game.spins || typeof game.spins !== 'object') game.spins = {}
 	game.spins.desktop = normalizeSpins(game.spins.desktop, defaults.spins.desktop, 5)
 	game.spins.mobile = normalizeSpins(game.spins.mobile, defaults.spins.mobile, 3)

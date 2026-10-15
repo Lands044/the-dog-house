@@ -32,18 +32,5 @@ export const GAME_FIELDS = [
 		{ path: 'texts.bigWin', label: 'Текст великого виграшу', type: 'text' }
 	]],
 	['Спіни (desktop)', spinFields('desktop')],
-	['Спіни (mobile)', spinFields('mobile')],
-	['Таймінги (мс)', [
-		{ path: 'game.timing.spinDuration.desktop', label: 'Кручення desktop', type: 'number', min: 0, step: 50 },
-		{ path: 'game.timing.spinDuration.mobile', label: 'Кручення mobile', type: 'number', min: 0, step: 50 },
-		{ path: 'game.timing.stopDelay.desktop', label: 'Затримка колонки desktop', type: 'number', min: 0, step: 10 },
-		{ path: 'game.timing.stopDelay.mobile', label: 'Затримка колонки mobile', type: 'number', min: 0, step: 10 },
-		{ path: 'game.timing.stopDuration', label: 'Відскок при зупинці', type: 'number', min: 0, step: 50 },
-		{ path: 'game.timing.startDelay', label: 'Затримка старту колонок', type: 'number', min: 0, step: 10 },
-		{ path: 'game.timing.spinDistance.desktop', label: 'Іконок за спін desktop', type: 'number', min: 3, step: 1 },
-		{ path: 'game.timing.spinDistance.mobile', label: 'Іконок за спін mobile', type: 'number', min: 3, step: 1 },
-		{ path: 'game.timing.smallWinTime', label: 'Показ малого виграшу', type: 'number', min: 0, step: 100 },
-		{ path: 'game.timing.bigWinTime', label: 'Показ великого виграшу', type: 'number', min: 0, step: 100 },
-		{ path: 'game.timing.ctaDelay', label: 'Затримка попапу CTA', type: 'number', min: 0, step: 100 }
-	]]
+	['Спіни (mobile)', spinFields('mobile')]
 ]

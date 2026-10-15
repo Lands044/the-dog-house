@@ -41,24 +41,6 @@ export const DEFAULT_CONFIG = {
 		minBet: 1,
 		maxBet: 48,
 
-		timing: {
-			// Linear spin of the first column, ms. Mobile (3 columns) spins longer.
-			spinDuration: { desktop: 900, mobile: 2500 },
-			// Extra spin time per following column, ms.
-			stopDelay: { desktop: 350, mobile: 250 },
-			// Overshoot/bounce phase at the end of the spin, ms.
-			stopDuration: 500,
-			// Start offset between columns, ms.
-			startDelay: 80,
-			// How many icons each column scrolls past during the linear phase.
-			spinDistance: { desktop: 28, mobile: 58 },
-			// How long the win animation holds before the spin button unlocks, ms.
-			smallWinTime: 1500,
-			bigWinTime: 3000,
-			// Delay between the last spin and the CTA popup, ms.
-			ctaDelay: 1500
-		},
-
 		// Scripted spins, played in order; the CTA popup opens after the last one.
 		// type: loss | smallwin | bigwin
 		// winAmount: credited to the balance after the spin

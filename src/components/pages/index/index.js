@@ -374,12 +374,11 @@ class SlotMachine {
 	// Анімація обертання всіх колонок
 	async spin(result) {
 		const columns = this.drumSpinner.querySelectorAll('.drum__column');
-		const device = this.config.cols === 3 ? 'mobile' : 'desktop';
-		const timing = this.landingConfig.game.timing;
-		const baseSpinDuration = timing.spinDuration[device]; // мінімальний час кручення першої колонки
-		const stopDelay        = timing.stopDelay[device];    // додаткова затримка кожної наступної колонки
-		const stopDuration     = timing.stopDuration;         // тривалість фази overshoot
-		const startDelay       = timing.startDelay;           // затримка старту між колонками
+		const isMobile = this.config.cols === 3;
+		const baseSpinDuration = isMobile ? 2500 : 900; // мінімальний час кручення першої колонки
+		const stopDelay        = isMobile ? 250 : 350;  // додаткова затримка кожної наступної колонки
+		const stopDuration     = 500; // тривалість фази overshoot
+		const startDelay       = 80;  // затримка старту між колонками
 
 		const spinPromises = Array.from(columns).map((column, colIndex) => {
 			return new Promise((resolve) => {
@@ -415,7 +414,7 @@ class SlotMachine {
 		// Фаза 2 проходить midOffset→finalOffset з overshoot за stopDuration
 		const isMobile = this.config.cols === 3;
 		const stopDistance = iconHeight * 3;
-		const spinDistance = iconHeight * this.landingConfig.game.timing.spinDistance[isMobile ? 'mobile' : 'desktop'];
+		const spinDistance = iconHeight * (isMobile ? 58 : 28);
 		const midOffset   = finalOffset + stopDistance;
 		const startOffset = midOffset + spinDistance;
 
@@ -500,7 +499,7 @@ class SlotMachine {
 				this.removeBigWinText();
 				this.removeWinLine();
 				this.enableSpinButtons();
-			}, this.landingConfig.game.timing.bigWinTime);
+			}, 3000);
 
 		} else if (result.type === 'smallwin') {
 			this.playSound('win');
@@ -517,7 +516,7 @@ class SlotMachine {
 				this.drumSpinner.style.borderRadius = '';
 				this.removeWinLine();
 				this.enableSpinButtons();
-			}, this.landingConfig.game.timing.smallWinTime);
+			}, 1500);
 
 		} else {
 			// Програш - одразу розблоковуємо кнопки
@@ -699,7 +698,7 @@ class SlotMachine {
 			if (!this.confettiAnimation) {
 				this.confettiAnimation = new ConfettiAnimation(this.popup);
 			}
-		}, this.landingConfig.game.timing.ctaDelay);
+		}, 1500);
 	}
 
 	// Перемикання звуку
