@@ -1,7 +1,26 @@
 import ConfettiAnimation from './confetti.js';
+import { loadConfig, watchConfig } from '@js/config/config.js';
+import { registerGameConfig } from '@js/config/normalize.js';
+import { DEFAULT_CONFIG } from '@js/config/game.defaults.js';
+import { soundUrl } from '@js/config/assets.js';
+import { renderLanding } from './render.js';
+import { GAME_FIELDS } from './devmenu.fields.js';
+
+// Підключаємо нормалізатор game-блоку до core-конфігу ДО loadConfig()
+registerGameConfig();
 
 class SlotMachine {
-	constructor() {
+	// landingConfig — рантайм-конфіг з public/config.json (this.config нижче —
+	// конфіг поточного брейкпоінта, як і раніше)
+	constructor(landingConfig) {
+		this.landingConfig = landingConfig;
+		const game = landingConfig.game;
+
+		// Таймери та обробники відстежуються, щоб destroy() міг їх зняти
+		// при перезапуску гри після зміни конфігу
+		this.timers = new Set();
+		this.listeners = [];
+
 		// DOM елементи
 		this.drumSpinner = document.querySelector('.drum__spinner');
 		this.popup = document.querySelector('.popup');
@@ -24,14 +43,15 @@ class SlotMachine {
 		// Стан гри
 		this.spinCount = 0;
 		this.isSpinning = false;
-		this.isSoundEnabled = true;
+		this.isSoundEnabled = landingConfig.sound.enabled;
 
 		// Фінансові значення
-		this.balance = 1000.00;
-		this.bet = 2.00;
-		this.betStep = 1.00;
-		this.minBet = 1.00;
-		this.maxBet = 48.00;
+		this.currency = game.currency;
+		this.balance = game.balance;
+		this.bet = game.bet;
+		this.betStep = game.betStep;
+		this.minBet = game.minBet;
+		this.maxBet = game.maxBet;
 
 		// Брейкпоінти: desktop (>767.98px), mobile (<=767.98px), mobileSmall (<=479.98 && <=800px height)
 		this.breakpoints = {
@@ -60,9 +80,9 @@ class SlotMachine {
 
 		// Звуки
 		this.sounds = {
-			spin: new Audio('@sound/spin.mp3'),
-			win: new Audio('@sound/win2.mp3'),
-			select: new Audio('@sound/select.ogg')
+			spin: this.createSound('spin'),
+			win: this.createSound('win'),
+			select: this.createSound('select')
 		};
 
 		// Іконки (8 типів)
@@ -84,88 +104,53 @@ class SlotMachine {
 			20: this.generateRandomLines(4)
 		};
 
-		// Предустановлені результати спінів
-		// Desktop: 5 колонок по 4 іконки
-		// Mobile: 3 колонки по 3 іконки
-		// winLine: масив рядків (0-3 для desktop, 0-2 для mobile) де знаходяться виграшні іконки
-		this.predefinedResults = {
-			desktop: [
-				{
-					type: 'loss',
-					winAmount: 0,
-					winLine: null,
-					result: [
-						[2, 4, 1],
-						[3, 5, 2],
-						[1, 7, 4],
-						[6, 2, 5],
-						[4, 1, 3]
-					]
-				},
-				{
-					type: 'smallwin',
-					winAmount: 50,
-					// Виграшна лінія: рядки 1-2 (горизонтальна лінія посередині)
-					winLine: [1, 1, 1, 1, null],
-					result: [
-						[3, 1, 2],
-						[7, 1, 8],
-						[5, 1, 6],
-						[2, 1, 3],
-						[5, 6, 7]
-					]
-				},
-				{
-					type: 'bigwin',
-					winAmount: 150,
-					// Виграшна лінія: рядки 1-2 (центральні) - діагональ вниз
-					winLine: [1, 1, 1, 2, 2],
-					result: [
-						[2, 4, 7],
-						[5, 4, 2],
-						[3, 4, 8],
-						[2, 5, 4],
-						[5, 3, 4]
-					]
-				}
-			],
-			mobile: [
-				{
-					type: 'loss',
-					winAmount: 0,
-					winLine: null,
-					result: [
-						[4, 1, 7],
-						[5, 2, 8],
-						[7, 4, 3]
-					]
-				},
-				{
-					type: 'smallwin',
-					winAmount: 50,
-					// Виграшна лінія: середній рядок
-					winLine: [1, 1, 1],
-					result: [
-						[2, 1, 5],
-						[7, 1, 2],
-						[6, 1, 8]
-					]
-				},
-				{
-					type: 'bigwin',
-					winAmount: 150,
-					// Виграшна лінія: середній рядок
-					winLine: [1, 1, 1],
-					result: [
-						[5, 4, 8],
-						[3, 4, 2],
-						[2, 4, 6]
-					]
-				}
-			]
-		};
+		// Предустановлені результати спінів — з конфігу (game.spins)
+		// Desktop: 5 колонок по 3 іконки, Mobile: 3 колонки по 3 іконки
+		// winLine: масив рядків (0-2) де знаходяться виграшні іконки
+		this.predefinedResults = game.spins;
 
 		this.init();
+	}
+
+	createSound(key) {
+		const { assets, sound } = this.landingConfig;
+		const audio = new Audio(soundUrl(assets.sounds?.[key], DEFAULT_CONFIG.assets.sounds[key]));
+		audio.volume = sound.volume;
+		return audio;
+	}
+
+	delay(callback, time) {
+		const id = setTimeout(() => {
+			this.timers.delete(id);
+			callback();
+		}, time);
+		this.timers.add(id);
+		return id;
+	}
+
+	on(target, event, handler) {
+		target.addEventListener(event, handler);
+		this.listeners.push([target, event, handler]);
+	}
+
+	// Знімає таймери/обробники та повертає DOM у початковий стан —
+	// викликається перед перезапуском гри з новим конфігом
+	destroy() {
+		this.timers.forEach(id => clearTimeout(id));
+		this.timers.clear();
+		this.listeners.forEach(([target, event, handler]) => target.removeEventListener(event, handler));
+		this.listeners = [];
+
+		this.stopAllSounds();
+		this.confettiAnimation?.destroy();
+		this.confettiAnimation = null;
+
+		this.popup.classList.remove('show');
+		this.buttonsWrap.classList.remove('hidden');
+		this.spinButton.classList.remove('disabled');
+		this.soundButton.classList.remove('sound-off');
+		this.drumSpinner.classList.remove('bigwin-animation', 'smallwin-animation');
+		this.drumSpinner.style.borderRadius = '';
 	}
 
 	getCurrentBreakpoint() {
@@ -200,40 +185,41 @@ class SlotMachine {
 		this.createReels();
 
 		// Обробники кнопок спіну
-		this.spinButton.addEventListener('click', (e) => {
+		this.on(this.spinButton, 'click', (e) => {
 			e.preventDefault();
 			this.handleSpin();
 		});
 
 		// Обробник кнопки звуку
-		this.soundButton.addEventListener('click', (e) => {
+		this.on(this.soundButton, 'click', (e) => {
 			e.preventDefault();
 			this.toggleSound();
 		});
+		this.soundButton.classList.toggle('sound-off', !this.isSoundEnabled);
 
 		// Обробники кнопок ставки
 		if (this.minusButton) {
-			this.minusButton.addEventListener('click', (e) => {
+			this.on(this.minusButton, 'click', (e) => {
 				e.preventDefault();
 				this.decreaseBet();
 			});
 		}
 
 		if (this.plusButton) {
-			this.plusButton.addEventListener('click', (e) => {
+			this.on(this.plusButton, 'click', (e) => {
 				e.preventDefault();
 				this.increaseBet();
 			});
 		}
 
 		// Оновлення при зміні розміру вікна
-		window.addEventListener('resize', () => {
+		this.on(window, 'resize', () => {
 			this.handleResize();
 		});
 
 		// Обробники кнопок Lines
 		this.linesItems.forEach((item) => {
-			item.addEventListener('click', () => {
+			this.on(item, 'click', () => {
 				this.handleLinesClick(item);
 			});
 		});
@@ -388,19 +374,20 @@ class SlotMachine {
 	// Анімація обертання всіх колонок
 	async spin(result) {
 		const columns = this.drumSpinner.querySelectorAll('.drum__column');
-		const isMobile = this.config.cols === 3;
-		const baseSpinDuration = isMobile ? 2500 : 900; // мінімальний час кручення першої колонки
-		const stopDelay        = isMobile ? 250 : 350;  // додаткова затримка кожної наступної колонки
-		const stopDuration     = 500; // тривалість фази overshoot
-		const startDelay       = 80;  // затримка старту між колонками
+		const device = this.config.cols === 3 ? 'mobile' : 'desktop';
+		const timing = this.landingConfig.game.timing;
+		const baseSpinDuration = timing.spinDuration[device]; // мінімальний час кручення першої колонки
+		const stopDelay        = timing.stopDelay[device];    // додаткова затримка кожної наступної колонки
+		const stopDuration     = timing.stopDuration;         // тривалість фази overshoot
+		const startDelay       = timing.startDelay;           // затримка старту між колонками
 
 		const spinPromises = Array.from(columns).map((column, colIndex) => {
 			return new Promise((resolve) => {
-				setTimeout(() => {
+				this.delay(() => {
 					// Кожна колонка крутиться лінійно рівно до свого моменту зупинки
 					const spinDuration = baseSpinDuration + colIndex * stopDelay;
 					this.spinColumn(column, result.result[colIndex], spinDuration, stopDuration);
-					setTimeout(resolve, spinDuration + stopDuration);
+					this.delay(resolve, spinDuration + stopDuration);
 				}, colIndex * startDelay);
 			});
 		});
@@ -428,7 +415,7 @@ class SlotMachine {
 		// Фаза 2 проходить midOffset→finalOffset з overshoot за stopDuration
 		const isMobile = this.config.cols === 3;
 		const stopDistance = iconHeight * 3;
-		const spinDistance = iconHeight * (isMobile ? 58 : 28);
+		const spinDistance = iconHeight * this.landingConfig.game.timing.spinDistance[isMobile ? 'mobile' : 'desktop'];
 		const midOffset   = finalOffset + stopDistance;
 		const startOffset = midOffset + spinDistance;
 
@@ -443,7 +430,7 @@ class SlotMachine {
 		strip.style.transform = `translateY(-${midOffset}px)`;
 
 		// Фаза 2: одразу після закінчення фази 1 — overshoot до finalOffset
-		setTimeout(() => {
+		this.delay(() => {
 			strip.classList.remove('active');
 			strip.style.transition = `transform ${stopDuration}ms cubic-bezier(0.22, 1.3, 0.36, 1)`;
 			strip.style.transform = `translateY(-${finalOffset}px)`;
@@ -501,19 +488,19 @@ class SlotMachine {
 			this.showBigWinText();
 
 			// Малюємо виграшну лінію з невеликою затримкою
-			setTimeout(() => {
+			this.delay(() => {
 				if (result.winLine) {
 					this.drawWinLine(result.winLine);
 				}
 			}, 300);
 
-			setTimeout(() => {
+			this.delay(() => {
 				this.drumSpinner.classList.remove('bigwin-animation');
 				this.drumSpinner.style.borderRadius = '';
 				this.removeBigWinText();
 				this.removeWinLine();
 				this.enableSpinButtons();
-			}, 3000);
+			}, this.landingConfig.game.timing.bigWinTime);
 
 		} else if (result.type === 'smallwin') {
 			this.playSound('win');
@@ -525,12 +512,12 @@ class SlotMachine {
 				this.drawWinLine(result.winLine);
 			}
 
-			setTimeout(() => {
+			this.delay(() => {
 				this.drumSpinner.classList.remove('smallwin-animation');
 				this.drumSpinner.style.borderRadius = '';
 				this.removeWinLine();
 				this.enableSpinButtons();
-			}, 1500);
+			}, this.landingConfig.game.timing.smallWinTime);
 
 		} else {
 			// Програш - одразу розблоковуємо кнопки
@@ -604,7 +591,7 @@ class SlotMachine {
 		this.applyWinIconEffects(winLine);
 
 		// Анімація появи
-		setTimeout(() => {
+		this.delay(() => {
 			svg.classList.add('visible');
 		}, 50);
 	}
@@ -661,7 +648,7 @@ class SlotMachine {
 		const svg = this.drumSpinner.querySelector('.win-line-svg');
 		if (svg) {
 			svg.classList.remove('visible');
-			setTimeout(() => svg.remove(), 300);
+			this.delay(() => svg.remove(), 300);
 		}
 		// Видаляємо ефекти з іконок
 		this.removeWinIconEffects();
@@ -670,14 +657,14 @@ class SlotMachine {
 	// Ефекти виграшу
 	createWinEffects(count = 12) {
 		for (let i = 0; i < count; i++) {
-			setTimeout(() => {
+			this.delay(() => {
 				const flash = document.createElement('div');
 				flash.className = 'win-flash';
 				flash.style.left = `${Math.random() * 100}%`;
 				flash.style.top = `${Math.random() * 100}%`;
 				this.drumSpinner.appendChild(flash);
 
-				setTimeout(() => flash.remove(), 600);
+				this.delay(() => flash.remove(), 600);
 			}, i * 100);
 		}
 	}
@@ -686,10 +673,10 @@ class SlotMachine {
 	showBigWinText() {
 		const el = document.createElement('div');
 		el.className = 'bigwin-text';
-		el.textContent = 'BIG WIN!';
+		el.textContent = this.landingConfig.texts.bigWin;
 		this.drumSpinner.appendChild(el);
 
-		setTimeout(() => el.classList.add('visible'), 50);
+		this.delay(() => el.classList.add('visible'), 50);
 	}
 
 	// Видаляє "BIG WIN!" текст
@@ -697,7 +684,7 @@ class SlotMachine {
 		const el = this.drumSpinner.querySelector('.bigwin-text');
 		if (el) {
 			el.classList.remove('visible');
-			setTimeout(() => el.remove(), 400);
+			this.delay(() => el.remove(), 400);
 		}
 	}
 
@@ -705,14 +692,14 @@ class SlotMachine {
 	showCTA() {
 		this.buttonsWrap.classList.add('hidden');
 
-		setTimeout(() => {
+		this.delay(() => {
 			this.popup.classList.add('show');
 
 			// Запускаємо анімацію конфеті
 			if (!this.confettiAnimation) {
 				this.confettiAnimation = new ConfettiAnimation(this.popup);
 			}
-		}, 1500);
+		}, this.landingConfig.game.timing.ctaDelay);
 	}
 
 	// Перемикання звуку
@@ -789,10 +776,10 @@ class SlotMachine {
 	// Оновлення UI
 	updateUI() {
 		if (this.balanceElement) {
-			this.balanceElement.textContent = '$' + this.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+			this.balanceElement.textContent = this.currency + this.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 		}
 		if (this.betElement) {
-			this.betElement.textContent = '$' + this.bet.toFixed(2);
+			this.betElement.textContent = this.currency + this.bet.toFixed(2);
 		}
 	}
 
@@ -908,12 +895,12 @@ class SlotMachine {
 		this.drumSpinner.appendChild(svg);
 
 		// Плавна поява
-		setTimeout(() => {
+		this.delay(() => {
 			svg.classList.add('visible');
 		}, 50);
 
 		// Автоматичне зникнення через 2 секунди
-		this.paylinesTimeout = setTimeout(() => {
+		this.paylinesTimeout = this.delay(() => {
 			this.hidePaylines();
 		}, 2000);
 	}
@@ -923,7 +910,7 @@ class SlotMachine {
 		const svg = this.drumSpinner.querySelector('.paylines-svg');
 		if (svg) {
 			svg.classList.remove('visible');
-			setTimeout(() => svg.remove(), 300);
+			this.delay(() => svg.remove(), 300);
 		}
 	}
 
@@ -936,7 +923,39 @@ class SlotMachine {
 	}
 }
 
+let game = null;
+
+// Рендерить лендінг для конфігу. Викликається при завантаженні і на кожну зміну
+// конфігу — правка застосовується без збірки та перезавантаження сторінки.
+function mount(config) {
+	game?.destroy();
+	renderLanding(config);
+	game = new SlotMachine(config);
+	return game;
+}
+
+let devMenu = null;
+
 // Ініціалізація при завантаженні сторінки
-document.addEventListener('DOMContentLoaded', () => {
-	new SlotMachine();
+document.addEventListener('DOMContentLoaded', async () => {
+	const config = await loadConfig();
+	mount(config);
+
+	// Зміна public/config.json перерендерює лендінг на місці
+	watchConfig(config, next => {
+		mount(next);
+		devMenu?.sync(next);
+	});
+
+	// Панель конфігу — потрапляє і в production (керується config.dev.menu).
+	// У dev пише в public/config.json, у зібраному білді — в localStorage браузера
+	// (див. docs/config.md, "The config menu"). Для dev-only варіанту:
+	// `import.meta.env.DEV && config.dev.menu`.
+	if (config.dev.menu) {
+		const { initDevMenu, CORE_FIELDS } = await import('@js/config/devmenu.js');
+		devMenu = await initDevMenu(config, next => mount(next), {
+			fields: [...GAME_FIELDS, ...CORE_FIELDS],
+			title: 'THE DOG HOUSE'
+		});
+	}
 });
